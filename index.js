@@ -1,7 +1,6 @@
 import app from './app.js';
-import { PrismaClient } from './generated/prisma/index.js';
+import prisma from './prismaClient.js';
 
-const prisma = new PrismaClient();
 const PORT = process.env.PORT || 5000;
 
 // Graceful shutdown function

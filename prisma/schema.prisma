@@ -1,11 +1,10 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL_INTERNAL")
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -21,4 +20,28 @@ model User {
   updatedAt     DateTime @updatedAt
 
   @@map("users")
+}
+
+model Collection {
+  id            String    @id @default(cuid())
+  name          String    @unique
+  products      Product[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("collections")
+}
+
+model Product {
+  id            String      @id @default(cuid())
+  name          String
+  description   String?
+  price         Float
+  imageUrl      String
+  collectionId  String
+  collection    Collection  @relation(fields: [collectionId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("products")
 }

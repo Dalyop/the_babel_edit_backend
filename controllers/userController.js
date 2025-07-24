@@ -1,8 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '../generated/prisma/index.js';
-
-const prisma = new PrismaClient();
+import prisma from '../prismaClient.js';
 
 // Generate JWT token
 const generateToken = (userId, email) => {
@@ -86,8 +84,8 @@ export const login = async (req, res) => {
 
     // Check if user has password (Google OAuth users don't have passwords)
     if (!user.password) {
-      return res.status(401).json({ 
-        message: 'This account was created with Google. Please use Google login.' 
+      return res.status(401).json({
+        message: 'This account was created with Google. Please use Google login.'
       });
     }
 
@@ -204,6 +202,7 @@ export const handleGoogleAuth = async (profile) => {
             avatar: profile.photos[0]?.value
           }
         });
+        
       } else {
         // Create new user
         user = await prisma.user.create({

@@ -8,9 +8,11 @@ import session from 'express-session';
 
 // Import routes
 import userRoutes from './routes/userRoutes.js';
+import productRoutes from './routes/productRoutes.js';
 
 // Import passport config
 import './config/passport.js';
+import router from './routes/productRoutes.js';
 
 dotenv.config();
 
@@ -21,7 +23,7 @@ app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://thebabeledit.com',
+  origin: process.env.FRONTEND_URL,
   credentials: true
 }));
 
@@ -61,6 +63,7 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use('/api/users', userRoutes);
+app.use('/api', productRoutes);
 
 // 404 handler
 app.use('/*splat', (req, res) => {
