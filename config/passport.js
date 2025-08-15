@@ -1,16 +1,7 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import jwt from 'jsonwebtoken';
 import prisma from '../prismaClient.js';
-
-// Generate JWT token
-const generateToken = (userId, email) => {
-  return jwt.sign(
-    { id: userId, email },
-    process.env.JWT_SECRET,
-    { expiresIn: '7d' }
-  );
-};
+import { generateAccessToken, generateRefreshToken } from '../utils/authUtils.js';
 
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
@@ -18,7 +9,7 @@ passport.use(new GoogleStrategy({
   callbackURL: process.env.NODE_ENV === 'production' 
     ? `${process.env.SERVER_URL}/api/users/auth/google/callback`
     : "/api/users/auth/google/callback",
-    scope: [ 'profile', 'email']
+  scope: ['profile', 'email']
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     // Check if user exists by Google ID
@@ -62,23 +53,54 @@ passport.use(new GoogleStrategy({
       }
     }
 
-    return done(null, user);
+    // Generate tokens for the authenticated user
+    const userAccessToken = generateAccessToken(user);
+    const userRefreshToken = generateRefreshToken(user);
+
+    // Store refresh token in database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken: userRefreshToken }
+    });
+
+    // Return user along with tokens
+    const authResult = {
+      user,
+      accessToken: userAccessToken,
+      refreshToken: userRefreshToken
+    };
+
+    return done(null, authResult);
   } catch (error) {
     console.error('Google OAuth error:', error);
     return done(error, null);
   }
 }));
 
-// Serialize user for session
-passport.serializeUser((user, done) => {
-  done(null, user.id);
+// Since we're using session: false for stateless JWT auth,
+// these serialize/deserialize functions are not needed for the OAuth flow
+// But keeping them in case you want to use sessions elsewhere
+passport.serializeUser((authResult, done) => {
+  // Store only the user ID in the session
+  done(null, authResult.user.id);
 });
 
-// Deserialize user from session
 passport.deserializeUser(async (id, done) => {
   try {
     const user = await prisma.user.findUnique({
-      where: { id }
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        googleId: true,
+        avatar: true,
+        isVerified: true,
+        createdAt: true,
+        updatedAt: true
+        // Don't select password or refreshToken for security
+      }
     });
     done(null, user);
   } catch (error) {
@@ -86,4 +108,4 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-export { generateToken };
+export default passport;

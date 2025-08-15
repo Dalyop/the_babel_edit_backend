@@ -33,6 +33,8 @@ A comprehensive authentication server with JWT and Google OAuth support built wi
    
    # JWT
    JWT_SECRET="your-super-secret-jwt-key-here"
+   ACCESS_TOKEN_SECRET="your-access-token-secret"
+   REFRESH_TOKEN_SECRET="your-refresh-token-secret"
    
    # Session
    SESSION_SECRET="your-session-secret-key"
@@ -58,6 +60,9 @@ A comprehensive authentication server with JWT and Google OAuth support built wi
    
    # Push schema to database
    npm run db:push
+   
+   # Seed database with sample data (optional)
+   npm run db:seed
    ```
 
 4. **Start the server**

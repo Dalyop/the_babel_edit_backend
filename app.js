@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import passport from 'passport';
 import session from 'express-session';
@@ -9,14 +10,19 @@ import session from 'express-session';
 // Import routes
 import userRoutes from './routes/userRoutes.js';
 import productRoutes from './routes/productRoutes.js';
+import cartRoutes from './routes/cartRoute.js';
+import orderRoutes from './routes/orderRoutes.js';
+import addressRoutes from './routes/addressRoutes.js';
+import wishlistRoutes from './routes/wishlistRoutes.js';
+import passwordResetRoutes from './routes/passwordResetRoutes.js';
 
 // Import passport config
 import './config/passport.js';
-import router from './routes/productRoutes.js';
 
 dotenv.config();
 
 const app = express();
+
 
 // Security middleware
 app.use(helmet());
@@ -30,6 +36,7 @@ app.use(cors({
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
 // Logging middleware
 if (process.env.NODE_ENV === 'development') {
@@ -62,15 +69,20 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
-app.use('/api/users', userRoutes);
+app.use('/api/auth', userRoutes);
 app.use('/api', productRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/addresses', addressRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/password', passwordResetRoutes);
 
 // 404 handler
 app.use('/*splat', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// Global error handler
+// Global error handlerg
 app.use((error, req, res, next) => {
   console.error('Global error handler:', error);
   

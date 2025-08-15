@@ -10,6 +10,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
+    "db:seed": "node prisma/seed.js",
     "db:studio": "prisma studio"
   },
   "keywords": [
@@ -25,6 +26,7 @@
     "@prisma/client": "^6.12.0",
     "bcrypt": "^6.0.0",
     "cloudinary": "^1.41.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",

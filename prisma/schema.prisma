@@ -8,16 +8,27 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  password      String?  // Null for Google OAuth users
-  firstName     String?
-  lastName      String?
-  googleId      String?  @unique
-  avatar        String?
-  isVerified    Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String      @id @default(cuid())
+  email           String      @unique
+  password        String?     // Null for Google OAuth users
+  firstName       String?
+  lastName        String?
+  phone           String?
+  googleId        String?     @unique
+  refreshToken    String?
+  avatar          String?
+  isVerified      Boolean     @default(false)
+  isAgree         Boolean     @default(false)
+  role            Role        @default(USER)
+  // Relations
+  cart            Cart?
+  addresses       Address[]
+  orders          Order[]
+  reviews         Review[]
+  wishlistItems   WishlistItem[]
+  // Timestamps
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   @@map("users")
 }
@@ -25,6 +36,9 @@ model User {
 model Collection {
   id            String    @id @default(cuid())
   name          String    @unique
+  description   String?
+  imageUrl      String?
+  isActive      Boolean   @default(true)
   products      Product[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -37,11 +51,179 @@ model Product {
   name          String
   description   String?
   price         Float
+  comparePrice  Float?      // Original price for discounts
   imageUrl      String
+  images        String[]    // Multiple product images
+  stock         Int         @default(0)
+  sku           String?     @unique
   collectionId  String
   collection    Collection  @relation(fields: [collectionId], references: [id])
+  sizes         String[]    // Array of available sizes
+  colors        String[]    // Array of available colors
+  tags          String[]    // Product tags for search
+  weight        Float?      // For shipping calculations
+  dimensions    String?     // L x W x H
+  isActive      Boolean     @default(true)
+  isFeatured    Boolean     @default(false)
+  // Relations
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  reviews       Review[]
+  wishlistItems WishlistItem[]
+  // Timestamps
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
   @@map("products")
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  size      String?
+  color     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId, size, color])
+  @@map("cart_items")
+}
+
+model Address {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName   String
+  lastName    String
+  company     String?
+  address1    String
+  address2    String?
+  city        String
+  state       String
+  postalCode  String
+  country     String
+  phone       String?
+  isDefault   Boolean  @default(false)
+  // Relations
+  orders      Order[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("addresses")
+}
+
+model Order {
+  id                String        @id @default(cuid())
+  orderNumber       String        @unique
+  userId            String
+  user              User          @relation(fields: [userId], references: [id])
+  status            OrderStatus   @default(PENDING)
+  paymentStatus     PaymentStatus @default(PENDING)
+  paymentMethod     String?
+  paymentIntentId   String?       // Stripe payment intent ID
+  // Amounts
+  subtotal          Float
+  tax               Float         @default(0)
+  shipping          Float         @default(0)
+  discount          Float         @default(0)
+  total             Float
+  // Shipping
+  shippingAddressId String?
+  shippingAddress   Address?      @relation(fields: [shippingAddressId], references: [id])
+  trackingNumber    String?
+  estimatedDelivery DateTime?
+  // Items
+  items             OrderItem[]
+  // Notes
+  notes             String?
+  // Timestamps
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float    // Price at time of order
+  size      String?
+  color     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("order_items")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating    Int      // 1-5 stars
+  title     String?
+  comment   String?
+  isVerified Boolean @default(false) // Verified purchase
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId]) // One review per user per product
+  @@map("reviews")
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@map("wishlist_items")
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
 }
