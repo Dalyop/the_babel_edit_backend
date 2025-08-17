@@ -6,6 +6,8 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import passport from 'passport';
 import session from 'express-session';
+import { PrismaSessionStore } from '@quixo3/prisma-session-store';
+import prisma from './prismaClient.js';
 
 // Import routes
 import userRoutes from './routes/userRoutes.js';
@@ -43,11 +45,17 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Session configuration (for passport)
+// Session configuration (updated for production)
 app.use(session({
   secret: process.env.JWT_SECRET,
   resave: false,
   saveUninitialized: false,
+  store: process.env.NODE_ENV === 'production' 
+    ? new PrismaSessionStore(prisma, {
+        checkPeriod: 2 * 60 * 1000, // 2 minutes
+        dbRecordIdIsSessionId: true,
+      })
+    : undefined, // Use memory store in development
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
@@ -59,13 +67,30 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
+// Replace your current health check with this enhanced version
+app.get('/health', async (req, res) => {
+  try {
+    // Import prisma at the top of app.js
+    const { default: prisma } = await import('./prismaClient.js');
+    
+    // Test database connection
+    await prisma.$queryRaw`SELECT 1`;
+    
+    res.json({ 
+      status: 'OK',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      version: process.env.npm_package_version || '1.0.0'
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      database: 'disconnected',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // API routes

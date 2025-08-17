@@ -203,6 +203,13 @@ model WishlistItem {
   @@map("wishlist_items")
 }
 
+model Session {
+  id        String   @id
+  sid       String   @unique
+  data      String
+  expiresAt DateTime
+}
+
 enum Role {
   USER
   ADMIN

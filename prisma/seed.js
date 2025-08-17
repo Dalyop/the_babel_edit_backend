@@ -1,3 +1,6 @@
+// Supabase db password
+// DKc8DkRY3vulPuaT
+
 import pkg from '@prisma/client';
 import bcrypt from 'bcrypt';
 
