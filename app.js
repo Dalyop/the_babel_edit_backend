@@ -8,7 +8,6 @@ import passport from 'passport';
 import session from 'express-session';
 import { PrismaSessionStore } from '@quixo3/prisma-session-store';
 import prisma from './prismaClient.js';
-import dotenv from 'dotenv';
 
 // Only load .env in development
 if (process.env.NODE_ENV !== 'production') {
