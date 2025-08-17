@@ -6,9 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "start:prod": "npx prisma db push && node index.js",
+    "start:prod": "node index.js",
+    "build": "npx prisma generate && npx prisma db push",
     "dev": "nodemon index.js",
-    "build": "npx prisma generate",
     "postinstall": "npx prisma generate",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
