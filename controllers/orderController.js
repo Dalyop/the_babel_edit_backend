@@ -144,6 +144,7 @@ export const createOrder = async (req, res) => {
   }
 };
 
+
 // Get user's orders
 export const getUserOrders = async (req, res) => {
   try {
@@ -450,5 +451,109 @@ export const updateOrderStatus = async (req, res) => {
   } catch (error) {
     console.error('Update order status error:', error);
     res.status(500).json({ message: 'Failed to update order status' });
+  }
+};
+
+// Add this new function to your existing orderController.js
+// This is specifically for the Stripe checkout flow
+
+// Create order directly from checkout (for Stripe payment flow)
+export const createOrderFromCheckout = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { items, shippingCost, totalAmount } = req.body;
+
+    // Validate required fields
+    if (!items || items.length === 0) {
+      return res.status(400).json({ message: 'Order must contain at least one item' });
+    }
+
+    if (!totalAmount || totalAmount <= 0) {
+      return res.status(400).json({ message: 'Invalid total amount' });
+    }
+
+    // Validate all products exist and have sufficient stock
+    for (const item of items) {
+      const product = await prisma.product.findUnique({
+        where: { id: item.productId }
+      });
+
+      if (!product) {
+        return res.status(404).json({ 
+          message: `Product not found: ${item.productId}` 
+        });
+      }
+
+      if (product.stock < item.quantity) {
+        return res.status(400).json({ 
+          message: `Insufficient stock for ${product.name}` 
+        });
+      }
+    }
+
+    // Calculate subtotal from items
+    const subtotal = items.reduce((sum, item) => 
+      sum + (item.price * item.quantity), 0
+    );
+
+    const tax = subtotal * 0.08; // 8% tax
+    const shipping = parseFloat(shippingCost || 0);
+    const discount = 0; // No discount for now
+
+    // Generate unique order number
+    const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Create order with items
+    const order = await prisma.order.create({
+      data: {
+        userId,
+        orderNumber,
+        status: 'PENDING',
+        paymentStatus: 'PENDING',
+        paymentMethod: 'STRIPE',
+        subtotal,
+        tax,
+        shipping,
+        discount,
+        total: parseFloat(totalAmount),
+        items: {
+          create: items.map(item => ({
+            productId: item.productId,
+            quantity: parseInt(item.quantity),
+            price: parseFloat(item.price),
+            size: item.size || null,
+            color: item.color || null
+          }))
+        }
+      },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                imageUrl: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    res.status(201).json({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      total: order.total,
+      status: order.status,
+      items: order.items
+    });
+
+  } catch (error) {
+    console.error('Create order from checkout error:', error);
+    res.status(500).json({ 
+      message: 'Failed to create order',
+      error: error.message 
+    });
   }
 };
