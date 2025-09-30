@@ -39,12 +39,13 @@ app.use(helmet());
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.FRONTEND_URL.replace('http:', 'https:'),
-  process.env.FRONTEND_URL_PRODUCTION
+  process.env.FRONTEND_URL_PRODUCTION,
+  'https://www.thebabeledit.com',
+  'https://thebabeledit.com'
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.indexOf(origin) === -1) {
