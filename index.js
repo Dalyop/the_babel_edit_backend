@@ -2,6 +2,7 @@ import app from './app.js';
 import prisma from './prismaClient.js';
 
 const PORT = process.env.PORT || 5000;
+const HOST = '0.0.0.0';
 
 // Graceful shutdown function
 const gracefulShutdown = async (signal) => {
@@ -21,15 +22,15 @@ const gracefulShutdown = async (signal) => {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-// Start server
-const server = app.listen(PORT, async () => {
+// Start server with explicit host binding
+const server = app.listen(PORT, HOST, async () => {
   try {
     // Test database connection
     await prisma.$connect();
     console.log('✅ Database connected successfully');
-    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🚀 Server running on ${HOST}:${PORT}`);
     console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+    console.log(`🔗 Health check available at /api/health`);
   } catch (error) {
     console.error('❌ Failed to connect to database:', error);
     process.exit(1);
