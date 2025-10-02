@@ -1,6 +1,7 @@
 import app from './app.js';
 import prisma from './prismaClient.js';
 
+// Host and Port
 const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0';
 
