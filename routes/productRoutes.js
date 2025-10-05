@@ -36,15 +36,15 @@ router.get('/search/suggestions', getSearchSuggestions);
 router.get('/filter-options', getFilterOptions);
 
 // Admin collection routes
-router.post('/admin/collections', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), createCollection);
-router.put('/admin/collections/:id', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), updateCollection);
-router.delete('/admin/collections/:id', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), deleteCollection);
-router.get('/admin/collections/:id/stats', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), getCollectionStats);
+router.post('/admin/collections', checkRole(['ADMIN', 'SUPER_ADMIN']), createCollection);
+router.put('/admin/collections/:id', checkRole(['ADMIN', 'SUPER_ADMIN']), updateCollection);
+router.delete('/admin/collections/:id', checkRole(['ADMIN', 'SUPER_ADMIN']), deleteCollection);
+router.get('/admin/collections/:id/stats', checkRole(['ADMIN', 'SUPER_ADMIN']), getCollectionStats);
 
 // Admin product routes
-router.get('/admin/products', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), getProducts); // ✅ ADD THIS LINE
-router.post('/admin/products', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), createProduct);
-router.put('/admin/products/:id', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), updateProduct);
-router.delete('/admin/products/:id', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), deleteProduct);
+router.get('/admin/products', checkRole(['ADMIN', 'SUPER_ADMIN']), getProducts); // ✅ ADD THIS LINE
+router.post('/admin/products', checkRole(['ADMIN', 'SUPER_ADMIN']), createProduct);
+router.put('/admin/products/:id', checkRole(['ADMIN', 'SUPER_ADMIN']), updateProduct);
+router.delete('/admin/products/:id', checkRole(['ADMIN', 'SUPER_ADMIN']), deleteProduct);
 
 export default router;
