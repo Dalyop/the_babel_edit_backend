@@ -75,9 +75,9 @@ router.get('/auth/google/success', (req, res) => {
 });
 
 // Admin user management routes
-router.get('/admin/users', checkRole(['ADMIN', 'SUPER_ADMIN']), getAllUsers);
-router.put('/admin/users/:userId/role', checkRole(['ADMIN', 'SUPER_ADMIN']), updateUserRole);
-router.delete('/admin/users/:userId', checkRole(['ADMIN', 'SUPER_ADMIN']), deleteUser);
-router.get('/admin/users/stats', checkRole(['ADMIN', 'SUPER_ADMIN']), getUserStats);
+router.get('/admin/users', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), getAllUsers);
+router.put('/admin/users/:userId/role', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), updateUserRole);
+router.delete('/admin/users/:userId', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), deleteUser);
+router.get('/admin/users/stats', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), getUserStats);
 
 export default router;
