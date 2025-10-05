@@ -42,6 +42,7 @@ router.delete('/admin/collections/:id', authenticateToken, checkRole(['ADMIN', '
 router.get('/admin/collections/:id/stats', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), getCollectionStats);
 
 // Admin product routes
+router.get('/admin/products', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), getProducts); // ✅ ADD THIS LINE
 router.post('/admin/products', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), createProduct);
 router.put('/admin/products/:id', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), updateProduct);
 router.delete('/admin/products/:id', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), deleteProduct);
