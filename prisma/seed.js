@@ -1,6 +1,3 @@
-// Supabase db password
-// DKc8DkRY3vulPuaT
-
 import pkg from '@prisma/client';
 import bcrypt from 'bcrypt';
 
@@ -26,7 +23,7 @@ async function main() {
   // Create Users
   console.log('👥 Seeding users...');
   const hashedPassword = await bcrypt.hash('password123', 12);
-  
+
   const users = [
     {
       email: 'admin@babeledit.com',
@@ -44,26 +41,6 @@ async function main() {
       lastName: 'Dalyop',
       phone: '+2347060737799',
       role: 'ADMIN',
-      isVerified: true,
-      isAgree: true
-    },
-    {
-      email: 'john.doe@example.com',
-      password: hashedPassword,
-      firstName: 'John',
-      lastName: 'Doe',
-      phone: '+1234567890',
-      role: 'USER',
-      isVerified: true,
-      isAgree: true
-    },
-    {
-      email: 'jane.smith@example.com',
-      password: hashedPassword,
-      firstName: 'Jane',
-      lastName: 'Smith',
-      phone: '+1987654321',
-      role: 'USER',
       isVerified: true,
       isAgree: true
     }

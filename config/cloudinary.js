@@ -16,4 +16,34 @@ const storage = new CloudinaryStorage({
   },
 });
 
-export const upload = multer({ storage });
+export const upload = multer({ 
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
+
+// Middleware to handle single image upload
+export const uploadSingle = upload.single('image');
+
+// Middleware to handle multiple images upload (up to 5 images)
+export const uploadMultiple = upload.array('images', 5);
+
+// Error handling middleware for multer errors
+export const handleUploadError = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'File size too large. Maximum size is 5MB' });
+    }
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({ message: 'Too many files uploaded' });
+    }
+    return res.status(400).json({ message: err.message });
+  }
+  
+  if (err) {
+    return res.status(500).json({ message: 'File upload failed' });
+  }
+  
+  next();
+};
