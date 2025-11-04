@@ -7,7 +7,7 @@ if (!stripeSecretKey) {
 }
 
 const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2023-10-16',
+  apiVersion: '2024-11-20.acacia',
 });
 
 console.log('✅ Stripe initialized with key:', stripeSecretKey.substring(0, 12) + '...');
