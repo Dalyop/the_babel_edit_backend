@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 import passport from 'passport';
 import session from 'express-session';
 import Redis from 'ioredis';
-import connectRedis from 'connect-redis';
+import { RedisStore } from 'connect-redis';
 import prisma from './prismaClient.js';
 
 // Only load .env in development
@@ -69,7 +69,6 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Session configuration
-const RedisStore = connectRedis(session);
 const redisClient = new Redis(process.env.REDIS_URL);
 
 app.use(session({
