@@ -136,7 +136,7 @@ model Order {
   status            OrderStatus   @default(PENDING)
   paymentStatus     PaymentStatus @default(PENDING)
   paymentMethod     String?
-  paymentIntentId   String?       // Stripe payment intent ID
+  paymentIntentId   String?       @unique // Stripe payment intent ID
   // Amounts
   subtotal          Float
   tax               Float         @default(0)
@@ -204,12 +204,7 @@ model WishlistItem {
   @@map("wishlist_items")
 }
 
-model Session {
-  id        String   @id
-  sid       String   @unique
-  data      String
-  expiresAt DateTime
-}
+
 
 enum Role {
   USER

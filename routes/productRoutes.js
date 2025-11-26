@@ -16,6 +16,7 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  hardDeleteProduct,
   getFeaturedProducts
 } from '../controllers/productController.js';
 import { authenticateToken } from '../middleware/auth.js';
@@ -85,5 +86,6 @@ router.get('/admin/products', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMI
 router.post('/admin/products', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), createProduct);
 router.put('/admin/products/:id', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), updateProduct);
 router.delete('/admin/products/:id', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), deleteProduct);
+router.delete('/admin/products/:id/hard', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), hardDeleteProduct);
 
 export default router;

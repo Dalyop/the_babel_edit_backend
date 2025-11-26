@@ -1,5 +1,8 @@
 import stripe from '../config/stripe.js';
 import prisma from '../prismaClient.js';
+import { sendEmail } from '../utils/emailService.js';
+import fs from 'fs/promises';
+import path from 'path';
 
 export const createPaymentIntent = async (req, res) => {
   try {
@@ -79,6 +82,14 @@ export const createPaymentIntent = async (req, res) => {
 
     console.log('✅ Payment intent created:', paymentIntent.id);
 
+    // Link payment intent to order
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { paymentIntentId: paymentIntent.id },
+    });
+
+    console.log('✅ Order updated with payment intent ID');
+
     res.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id
@@ -153,23 +164,119 @@ export const handleWebhook = async (req, res) => {
 };
 
 const handleSuccessfulPayment = async (paymentIntent) => {
-  const { orderId } = paymentIntent.metadata;
-  
+  const { orderId } = paymentIntent.metadata;  
   console.log('✅ Payment succeeded for order:', orderId);
 
   try {
-    await prisma.order.update({
+    const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: {
         status: 'CONFIRMED',
         paymentStatus: 'PAID',
         paymentMethod: 'STRIPE'
-      }
+      },
+      include: {
+        user: true,
+        items: {
+          include: {
+            product: true,
+          },
+        },
+        shippingAddress: true,
+      },
     });
-    console.log('✅ Order updated');
+    console.log('✅ Order updated in DB');
+
+    // Send confirmation emails
+    await sendConfirmationEmails(updatedOrder);
+
   } catch (error) {
-    console.error('❌ Failed to update order:', error);
-    throw error;
+    console.error('❌ Failed to update order or send emails:', error);
+    // Even if emails fail, the payment was successful. Don't throw error back to Stripe.
+    // Log it for manual intervention.
+  }
+};
+
+const sendConfirmationEmails = async (order) => {
+  try {
+    console.log(`📧 Sending confirmation emails for order ${order.orderNumber}`);
+    const customerTemplatePath = path.resolve(process.cwd(), 'templates', 'customerConfirmation.html');
+    const companyTemplatePath = path.resolve(process.cwd(), 'templates', 'companyNotification.html');
+
+    const [customerHtml, companyHtml] = await Promise.all([
+      fs.readFile(customerTemplatePath, 'utf-8'),
+      fs.readFile(companyTemplatePath, 'utf-8')
+    ]);
+    
+    // --- Common data ---
+    const formatCurrency = (amount) => `$${amount.toFixed(2)}`;
+    const customerName = `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() || order.user.email;
+    const orderDetailsUrl = `${process.env.FRONTEND_URL}/orders/${order.id}`;
+    const adminOrderUrl = `${process.env.FRONTEND_URL}/admin/orders/${order.id}`;
+
+    // --- Customer Email ---
+    const customerOrderItems = order.items.map(item => `
+      <tr>
+        <td>${item.product.name}</td>
+        <td>${item.quantity}</td>
+        <td>${formatCurrency(item.price * item.quantity)}</td>
+      </tr>
+    `).join('');
+
+    let finalCustomerHtml = customerHtml
+      .replace('{{customerName}}', customerName)
+      .replace('{{orderNumber}}', order.orderNumber)
+      .replace('{{orderItems}}', customerOrderItems)
+      .replace('{{subtotal}}', formatCurrency(order.subtotal))
+      .replace('{{shipping}}', formatCurrency(order.shipping))
+      .replace('{{tax}}', formatCurrency(order.tax))
+      .replace('{{total}}', formatCurrency(order.total))
+      .replace('{{orderDetailsUrl}}', orderDetailsUrl);
+
+    await sendEmail({
+      to: order.user.email,
+      subject: `Your The Babel Edit Order Confirmation (#${order.orderNumber})`,
+      html: finalCustomerHtml
+    });
+    console.log(`✅ Customer email sent to ${order.user.email}`);
+
+    // --- Company Email ---
+    const companyOrderItems = order.items.map(item => `
+      <tr>
+        <td>${item.product.sku || 'N/A'}</td>
+        <td>${item.product.name}</td>
+        <td>${item.quantity}</td>
+        <td>${formatCurrency(item.price)}</td>
+      </tr>
+    `).join('');
+    
+    const shippingAddressHtml = order.shippingAddress
+      ? `${order.shippingAddress.firstName} ${order.shippingAddress.lastName}<br>
+         ${order.shippingAddress.address1}<br>
+         ${order.shippingAddress.address2 || ''}<br>
+         ${order.shippingAddress.city}, ${order.shippingAddress.state} ${order.shippingAddress.postalCode}<br>
+         ${order.shippingAddress.country}`
+      : 'N/A';
+
+    let finalCompanyHtml = companyHtml
+      .replace('{{orderNumber}}', order.orderNumber)
+      .replace('{{customerName}}', customerName)
+      .replace('{{customerEmail}}', order.user.email)
+      .replace('{{total}}', formatCurrency(order.total))
+      .replace('{{orderItems}}', companyOrderItems)
+      .replace('{{shippingAddress}}', shippingAddressHtml)
+      .replace('{{adminOrderUrl}}', adminOrderUrl);
+
+    await sendEmail({
+      to: process.env.COMPANY_EMAIL || 'support@thebabeledit.com',
+      subject: `New Order Received: #${order.orderNumber}`,
+      html: finalCompanyHtml
+    });
+    console.log(`✅ Company notification email sent.`);
+
+  } catch (error) {
+    console.error(`❌ Error sending confirmation emails for order ${order.orderNumber}:`, error);
+    // Log this error, but don't let it crash the webhook response
   }
 };
 

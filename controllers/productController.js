@@ -22,9 +22,10 @@ export const getProducts = async (req, res) => {
     } = req.query;
 
     // Build where clause
-    const where = {
-      isActive: true
-    };
+    const where = {};
+    if (req.query.includeInactive !== 'true') {
+      where.isActive = true;
+    }
 
     // Search functionality
     if (search) {
@@ -111,8 +112,15 @@ export const getProducts = async (req, res) => {
             }
           },
           reviews: {
+            _avg: {
+              select: {
+                rating: true
+              }
+            }
+          },
+          _count: {
             select: {
-              rating: true
+              reviews: true
             }
           }
         },
@@ -125,20 +133,17 @@ export const getProducts = async (req, res) => {
 
     // Calculate average ratings and add computed fields
     const productsWithRatings = products.map(product => {
-      const avgRating = product.reviews.length > 0
-        ? product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length
-        : 0;
-
       const discountPercentage = product.comparePrice
         ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
         : 0;
 
-      const { reviews, ...productData } = product;
+      const { reviews, _count, ...productData } = product;
+      const avgRating = reviews._avg.rating || 0;
 
       return {
         ...productData,
         avgRating: Math.round(avgRating * 10) / 10, // Round to 1 decimal
-        reviewCount: reviews.length,
+        reviewCount: _count.reviews,
         discountPercentage,
         isInStock: product.stock > 0,
         isOnSale: !!product.comparePrice
@@ -498,13 +503,43 @@ export const createProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = { ...req.body };
+    const {
+      name,
+      description,
+      price,
+      comparePrice,
+      imageUrl,
+      images,
+      stock,
+      sku,
+      collectionId,
+      sizes,
+      colors,
+      tags,
+      weight,
+      dimensions,
+      isFeatured,
+      isActive,
+    } = req.body;
 
-    // Convert numeric fields
-    if (updateData.price) updateData.price = parseFloat(updateData.price);
-    if (updateData.comparePrice) updateData.comparePrice = parseFloat(updateData.comparePrice);
-    if (updateData.stock) updateData.stock = parseInt(updateData.stock);
-    if (updateData.weight) updateData.weight = parseFloat(updateData.weight);
+    const updateData = {
+      name,
+      description,
+      price: price ? parseFloat(price) : undefined,
+      comparePrice: comparePrice ? parseFloat(comparePrice) : undefined,
+      imageUrl,
+      images,
+      stock: stock ? parseInt(stock) : undefined,
+      sku,
+      collectionId,
+      sizes,
+      colors,
+      tags,
+      weight: weight ? parseFloat(weight) : undefined,
+      dimensions,
+      isFeatured,
+      isActive,
+    };
 
     const product = await prisma.product.update({
       where: { id },
@@ -512,17 +547,16 @@ export const updateProduct = async (req, res) => {
       include: {
         collection: {
           select: {
-            name: true
-          }
-        }
-      }
+            name: true,
+          },
+        },
+      },
     });
 
     res.json({
       message: 'Product updated successfully',
-      product
+      product,
     });
-
   } catch (error) {
     console.error('Update product error:', error);
     if (error.code === 'P2025') {
@@ -704,7 +738,7 @@ export const getFeaturedProducts = async (req, res) => {
   }
 };
 
-// Delete product (Admin only)
+// Soft delete product (Admin only)
 export const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -712,11 +746,29 @@ export const deleteProduct = async (req, res) => {
     // Soft delete - mark as inactive
     await prisma.product.update({
       where: { id },
-      data: { isActive: false }
+      data: { isActive: false },
     });
 
-    res.json({ message: 'Product deleted successfully' });
+    res.json({ message: 'Product soft-deleted successfully' });
+  } catch (error) {
+    console.error('Delete product error:', error);
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.status(500).json({ message: 'Failed to delete product' });
+  }
+};
 
+// Hard delete product (Admin only)
+export const hardDeleteProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await prisma.product.delete({
+      where: { id },
+    });
+
+    res.json({ message: 'Product permanently deleted successfully' });
   } catch (error) {
     console.error('Delete product error:', error);
     if (error.code === 'P2025') {

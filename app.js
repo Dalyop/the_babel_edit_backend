@@ -6,7 +6,8 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import passport from 'passport';
 import session from 'express-session';
-import { PrismaSessionStore } from '@quixo3/prisma-session-store';
+import Redis from 'ioredis';
+import connectRedis from 'connect-redis';
 import prisma from './prismaClient.js';
 
 // Only load .env in development
@@ -67,16 +68,16 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Session configuration (updated for production)
+// Session configuration
+const RedisStore = connectRedis(session);
+const redisClient = new Redis(process.env.REDIS_URL);
+
 app.use(session({
   secret: process.env.JWT_SECRET,
   resave: false,
   saveUninitialized: false,
   store: process.env.NODE_ENV === 'production'
-    ? new PrismaSessionStore(prisma, {
-      checkPeriod: 2 * 60 * 1000, // 2 minutes
-      dbRecordIdIsSessionId: true,
-    })
+    ? new RedisStore({ client: redisClient })
     : undefined, // Use memory store in development
   cookie: {
     secure: process.env.NODE_ENV === 'production',
