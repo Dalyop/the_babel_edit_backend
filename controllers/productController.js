@@ -112,10 +112,8 @@ export const getProducts = async (req, res) => {
           }
         },
         reviews: {
-          _avg: {
-            select: {
-              rating: true
-            }
+          select: {
+            rating: true
           }
         },
         _count: {
@@ -136,7 +134,9 @@ export const getProducts = async (req, res) => {
         : 0;
 
       const { reviews, _count, ...productData } = product;
-      const avgRating = reviews._avg.rating || 0;
+      const avgRating = reviews.length > 0
+        ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+        : 0;
 
       return {
         ...productData,
