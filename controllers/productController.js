@@ -101,35 +101,33 @@ export const getProducts = async (req, res) => {
     }
 
     // Execute query
-    const [products, total] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        include: {
-          collection: {
+    const total = await prisma.product.count({ where });
+    const products = await prisma.product.findMany({
+      where,
+      include: {
+        collection: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        reviews: {
+          _avg: {
             select: {
-              id: true,
-              name: true
-            }
-          },
-          reviews: {
-            _avg: {
-              select: {
-                rating: true
-              }
-            }
-          },
-          _count: {
-            select: {
-              reviews: true
+              rating: true
             }
           }
         },
-        orderBy,
-        skip: (parseInt(page) - 1) * parseInt(limit),
-        take: parseInt(limit)
-      }),
-      prisma.product.count({ where })
-    ]);
+        _count: {
+          select: {
+            reviews: true
+          }
+        }
+      },
+      orderBy,
+      skip: (parseInt(page) - 1) * parseInt(limit),
+      take: parseInt(limit)
+    });
 
     // Calculate average ratings and add computed fields
     const productsWithRatings = products.map(product => {
