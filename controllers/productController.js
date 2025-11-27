@@ -361,30 +361,33 @@ export const getFilterOptions = async (req, res) => {
       };
     }
 
-    // Get all products matching the base criteria
-    const products = await prisma.product.findMany({
+    // Efficiently get price range
+    const priceAggregation = await prisma.product.aggregate({
       where,
-      select: {
-        price: true,
-        comparePrice: true,
-        sizes: true,
-        colors: true,
-        tags: true
-      }
+      _min: { price: true },
+      _max: { price: true },
     });
 
-    // Extract unique values
-    const allSizes = [...new Set(products.flatMap(p => p.sizes))].sort();
-    const allColors = [...new Set(products.flatMap(p => p.colors))].sort();
-    const allTags = [...new Set(products.flatMap(p => p.tags))].sort();
-
-    // Calculate price range
-    const prices = products.map(p => p.price);
     const priceRange = {
-      min: Math.min(...prices),
-      max: Math.max(...prices)
+      min: priceAggregation._min.price || 0,
+      max: priceAggregation._max.price || 0,
     };
 
+    // Base query for distinct values
+    const baseQuery = `
+      SELECT DISTINCT unnest(column) AS item
+      FROM "Product"
+      WHERE "isActive" = true
+      ${collection ? `AND "collectionId" = (SELECT id FROM "Collection" WHERE name = '${collection}')` : ''}
+    `;
+
+    // Get distinct sizes, colors, and tags
+    const [sizes, colors, tags] = await Promise.all([
+      prisma.$queryRawUnsafe(baseQuery.replace('column', 'sizes')).then(res => res.map(r => r.item).sort()),
+      prisma.$queryRawUnsafe(baseQuery.replace('column', 'colors')).then(res => res.map(r => r.item).sort()),
+      prisma.$queryRawUnsafe(baseQuery.replace('column', 'tags')).then(res => res.map(r => r.item).sort()),
+    ]);
+    
     // Get collections
     const collections = await prisma.collection.findMany({
       where: { isActive: true },
@@ -403,9 +406,9 @@ export const getFilterOptions = async (req, res) => {
 
     res.json({
       priceRange,
-      sizes: allSizes,
-      colors: allColors,
-      tags: allTags,
+      sizes,
+      colors,
+      tags,
       collections: collections.map(c => ({
         name: c.name,
         productCount: c._count.products
