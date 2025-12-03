@@ -503,42 +503,46 @@ export const createOrderFromCheckout = async (req, res) => {
     // Generate unique order number
     const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // Create order with items
-    const order = await prisma.order.create({
-      data: {
-        userId,
-        orderNumber,
-        status: 'PENDING',
-        paymentStatus: 'PENDING',
-        paymentMethod: 'STRIPE',
-        subtotal,
-        tax,
-        shipping,
-        discount,
-        total: parseFloat(totalAmount),
-        items: {
-          create: items.map(item => ({
+    // Create order with items in a transaction
+    const order = await prisma.$transaction(async (tx) => {
+      const newOrder = await tx.order.create({
+        data: {
+          userId,
+          orderNumber,
+          status: 'PENDING',
+          paymentStatus: 'PENDING',
+          paymentMethod: 'STRIPE',
+          subtotal,
+          tax,
+          shipping,
+          discount,
+          total: parseFloat(totalAmount),
+        }
+      });
+
+      for (const item of items) {
+        await tx.orderItem.create({
+          data: {
+            orderId: newOrder.id,
             productId: item.productId,
             quantity: parseInt(item.quantity),
             price: parseFloat(item.price),
             size: item.size || null,
             color: item.color || null
-          }))
-        }
-      },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                imageUrl: true
-              }
+          }
+        });
+
+        // Decrement product stock
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            stock: {
+              decrement: parseInt(item.quantity)
             }
           }
-        }
+        });
       }
+      return newOrder;
     });
 
     res.status(201).json({

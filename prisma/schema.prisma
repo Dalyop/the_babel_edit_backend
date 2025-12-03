@@ -201,16 +201,25 @@ model WishlistItem {
   createdAt DateTime @default(now())
 
   @@unique([userId, productId])
-  @@map("wishlist_items")
-}
-
-
-
-enum Role {
-  USER
-  ADMIN
-  SUPER_ADMIN
-}
+    @@map("wishlist_items")
+  }
+  
+  model Testimonial {
+    id        String   @id @default(cuid())
+    author    String
+    text      String
+    avatar    String?
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+  
+    @@map("testimonials")
+  }
+  
+  enum Role {
+    USER
+    ADMIN
+    SUPER_ADMIN
+  }
 
 enum OrderStatus {
   PENDING
