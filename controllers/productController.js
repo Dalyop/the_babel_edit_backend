@@ -5,7 +5,7 @@ export const getProducts = async (req, res) => {
   try {
     const {
       page = 1,
-      limit = 20,
+      limit = 22,
       search,
       category,
       collection,
