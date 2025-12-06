@@ -128,15 +128,46 @@ export const createOrder = async (req, res) => {
       return order;
     });
 
-    res.status(201).json({
-      message: 'Order created successfully',
-      order: {
-        id: result.id,
-        orderNumber: result.orderNumber,
-        total: result.total,
-        status: result.status
-      }
-    });
+      // Fetch the full order details to return
+      const newOrder = await prisma.order.findUnique({
+        where: { id: result.id },
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  imageUrl: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      res.status(201).json({
+        message: 'Order created successfully',
+        order: {
+          id: newOrder.id,
+          orderNumber: newOrder.orderNumber,
+          status: newOrder.status,
+          paymentStatus: newOrder.paymentStatus,
+          total: newOrder.total,
+          itemCount: newOrder.items.length,
+          createdAt: newOrder.createdAt,
+          items: newOrder.items.map(item => ({
+            id: item.id,
+            productId: item.productId,
+            name: item.product.name,
+            imageUrl: item.product.imageUrl,
+            quantity: item.quantity,
+            price: item.price,
+            size: item.size,
+            color: item.color,
+          })),
+        },
+      });
 
   } catch (error) {
     console.error('Create order error:', error);
