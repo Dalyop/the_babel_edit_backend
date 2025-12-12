@@ -1,4 +1,5 @@
 import prisma from '../prismaClient.js';
+import pluralize from 'pluralize';
 
 // Get all products with advanced filtering and search
 export const getProducts = async (req, res) => {
@@ -29,24 +30,32 @@ export const getProducts = async (req, res) => {
 
     // Search functionality
     if (search) {
+      const singularSearch = pluralize.singular(search);
+      const pluralSearch = pluralize.plural(search);
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { tags: { hasSome: [search] } }
+        { name: { contains: singularSearch, mode: 'insensitive' } },
+        { name: { contains: pluralSearch, mode: 'insensitive' } },
+        { description: { contains: singularSearch, mode: 'insensitive' } },
+        { description: { contains: pluralSearch, mode: 'insensitive' } },
+        { tags: { hasSome: [singularSearch, pluralSearch] } }
       ];
     }
 
     // Collection filter
     if (collection) {
+      const singularCollection = pluralize.singular(collection);
+      const pluralCollection = pluralize.plural(collection);
       where.collection = {
-        name: { equals: collection, mode: 'insensitive' }
+        name: { in: [singularCollection, pluralCollection], mode: 'insensitive' }
       };
     }
 
     // Category filter (using collection for category-based filtering)
     if (category) {
+      const singularCategory = pluralize.singular(category);
+      const pluralCategory = pluralize.plural(category);
       where.collection = {
-        name: { equals: category, mode: 'insensitive' }
+        name: { in: [singularCategory, pluralCategory], mode: 'insensitive' }
       };
     }
 
@@ -72,7 +81,8 @@ export const getProducts = async (req, res) => {
     // Tags filter
     if (tags) {
       const tagArray = tags.split(',').map(t => t.trim());
-      where.tags = { hasSome: tagArray };
+      const tagVariations = tagArray.flatMap(tag => [pluralize.singular(tag), pluralize.plural(tag)]);
+      where.tags = { hasSome: [...new Set(tagVariations)] };
     }
 
     // Featured filter
