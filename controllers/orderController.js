@@ -592,3 +592,43 @@ export const createOrderFromCheckout = async (req, res) => {
     });
   }
 };
+
+// Confirm order payment
+export const confirmOrderPayment = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user.userId;
+
+    const order = await prisma.order.findFirst({
+      where: { id: orderId, userId },
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // If payment is already confirmed, just return success without updating
+    if (order.paymentStatus === 'PAID') {
+      const currentOrder = await prisma.order.findUnique({ where: { id: orderId }});
+      return res.json({ message: 'Payment already confirmed', order: currentOrder });
+    }
+
+    // Only allow update if the order is in PENDING state
+    if (order.status !== 'PENDING') {
+      return res.status(400).json({ message: 'This order status cannot be updated.' });
+    }
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentStatus: 'PAID',
+        status: 'CONFIRMED',
+      },
+    });
+
+    res.json({ message: 'Payment confirmed successfully', order: updatedOrder });
+  } catch (error) {
+    console.error('Confirm order payment error:', error);
+    res.status(500).json({ message: 'Failed to confirm order payment' });
+  }
+};

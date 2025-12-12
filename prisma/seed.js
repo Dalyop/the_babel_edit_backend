@@ -19,6 +19,7 @@ async function main() {
   await prisma.product.deleteMany();
   await prisma.collection.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.testimonial.deleteMany();
 
   // Create Users
   console.log('👥 Seeding users...');
@@ -605,11 +606,42 @@ async function main() {
     }
   }
 
+  // Create some sample testimonials
+  console.log('💬 Seeding testimonials...');
+  const testimonials = [
+    {
+      author: 'Sarah J.',
+      text: 'Absolutely in love with the vintage dress I bought! The quality is amazing and it arrived so quickly. Will definitely be shopping here again.',
+      avatar: 'https://i.pravatar.cc/150?u=sarah'
+    },
+    {
+      author: 'Michael B.',
+      text: "Found a rare pair of sneakers I've been looking for everywhere. The condition was exactly as described. Great service and communication.",
+      avatar: 'https://i.pravatar.cc/150?u=michael'
+    },
+    {
+      author: 'Emily K.',
+      text: "The Babel Edit is my go-to for unique finds. The curation is top-notch and I always get compliments on the pieces I buy.",
+      avatar: 'https://i.pravatar.cc/150?u=emily'
+    },
+    {
+      author: 'David L.',
+      text: "A fantastic shopping experience from start to finish. The website is easy to use and my order was handled with care. Highly recommend!",
+      avatar: 'https://i.pravatar.cc/150?u=david'
+    }
+  ];
+
+  await prisma.testimonial.createMany({
+    data: testimonials,
+    skipDuplicates: true,
+  });
+
   console.log('✅ Database seeding completed!');
   console.log(`📊 Seeded:`);
   console.log(`   - ${users.length} users`);
   console.log(`   - ${collections.length} collections`);
   console.log(`   - ${products.length} products`);
+  console.log(`   - ${testimonials.length} testimonials`);
   console.log(`   - Sample addresses, reviews, and wishlist items`);
   console.log('');
   console.log('🔐 Test Credentials:');
