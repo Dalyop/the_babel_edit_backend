@@ -104,8 +104,13 @@ export const getProducts = async (req, res) => {
 
     Object.entries(req.query).forEach(([key, value]) => {
       if (!reservedKeywords.includes(key) && value) {
-        const values = Array.isArray(value) ? value : [value];
-        where[key] = { hasSome: values.map(v => String(v)) };
+        // Assuming the dynamic key corresponds to a String field for now.
+        // This is a safer assumption than assuming it's an array, which caused crashes.
+        const values = Array.isArray(value) ? value : [value as string];
+        const variations = values.flatMap(v => [pluralize.singular(v), pluralize.plural(v)]);
+        const uniqueVariations = [...new Set(variations)];
+
+        where[key] = { in: uniqueVariations, mode: 'insensitive' };
       }
     });
     // --- End Dynamic Filter Logic ---
