@@ -95,10 +95,20 @@ export const getProducts = async (req, res) => {
       where.stock = { gt: 0 };
     }
 
-    // On sale filter (has comparePrice)
-    if (onSale === 'true') {
-      where.comparePrice = { not: null };
-    }
+    // --- Dynamic Filter Logic ---
+    const reservedKeywords = [
+      'page', 'limit', 'search', 'category', 'collection', 'minPrice', 'maxPrice', 
+      'sizes', 'colors', 'tags', 'sortBy', 'sortOrder', 'featured', 'inStock', 
+      'onSale', 'includeInactive'
+    ];
+
+    Object.entries(req.query).forEach(([key, value]) => {
+      if (!reservedKeywords.includes(key) && value) {
+        const values = Array.isArray(value) ? value : [value];
+        where[key] = { hasSome: values.map(v => String(v)) };
+      }
+    });
+    // --- End Dynamic Filter Logic ---
 
     // Build orderBy clause
     const validSortFields = ['name', 'price', 'createdAt', 'updatedAt', 'stock'];
