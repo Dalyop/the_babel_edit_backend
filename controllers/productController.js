@@ -30,32 +30,24 @@ export const getProducts = async (req, res) => {
 
     // Search functionality
     if (search) {
-      const singularSearch = pluralize.singular(search);
-      const pluralSearch = pluralize.plural(search);
       where.OR = [
-        { name: { contains: singularSearch, mode: 'insensitive' } },
-        { name: { contains: pluralSearch, mode: 'insensitive' } },
-        { description: { contains: singularSearch, mode: 'insensitive' } },
-        { description: { contains: pluralSearch, mode: 'insensitive' } },
-        { tags: { hasSome: [singularSearch, pluralSearch] } }
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { tags: { hasSome: [search] } }
       ];
     }
 
     // Collection filter
     if (collection) {
-      const singularCollection = pluralize.singular(collection);
-      const pluralCollection = pluralize.plural(collection);
       where.collection = {
-        name: { in: [singularCollection, pluralCollection], mode: 'insensitive' }
+        name: { equals: collection, mode: 'insensitive' }
       };
     }
 
     // Category filter (using collection for category-based filtering)
     if (category) {
-      const singularCategory = pluralize.singular(category);
-      const pluralCategory = pluralize.plural(category);
       where.collection = {
-        name: { in: [singularCategory, pluralCategory], mode: 'insensitive' }
+        name: { equals: category, mode: 'insensitive' }
       };
     }
 
@@ -81,8 +73,7 @@ export const getProducts = async (req, res) => {
     // Tags filter
     if (tags) {
       const tagArray = tags.split(',').map(t => t.trim());
-      const tagVariations = tagArray.flatMap(tag => [pluralize.singular(tag), pluralize.plural(tag)]);
-      where.tags = { hasSome: [...new Set(tagVariations)] };
+      where.tags = { hasSome: tagArray };
     }
 
     // Featured filter
@@ -95,25 +86,10 @@ export const getProducts = async (req, res) => {
       where.stock = { gt: 0 };
     }
 
-    // --- Dynamic Filter Logic ---
-    const reservedKeywords = [
-      'page', 'limit', 'search', 'category', 'collection', 'minPrice', 'maxPrice', 
-      'sizes', 'colors', 'tags', 'sortBy', 'sortOrder', 'featured', 'inStock', 
-      'onSale', 'includeInactive'
-    ];
-
-    Object.entries(req.query).forEach(([key, value]) => {
-      if (!reservedKeywords.includes(key) && value) {
-        // Assuming the dynamic key corresponds to a String field for now.
-        // This is a safer assumption than assuming it's an array, which caused crashes.
-        const values = Array.isArray(value) ? value : [value as string];
-        const variations = values.flatMap(v => [pluralize.singular(v), pluralize.plural(v)]);
-        const uniqueVariations = [...new Set(variations)];
-
-        where[key] = { in: uniqueVariations, mode: 'insensitive' };
-      }
-    });
-    // --- End Dynamic Filter Logic ---
+    // On sale filter (has comparePrice)
+    if (onSale === 'true') {
+      where.comparePrice = { not: null };
+    }
 
     // Build orderBy clause
     const validSortFields = ['name', 'price', 'createdAt', 'updatedAt', 'stock'];
