@@ -28,6 +28,30 @@ export const getProducts = async (req, res) => {
       where.isActive = true;
     }
 
+    // Size filter
+    if (sizes) {
+      const sizeArray = Array.isArray(sizes) ? sizes : sizes.split(',').map(s => s.trim());
+      if (sizeArray.length > 0) {
+        where.sizes = { hasSome: sizeArray };
+      }
+    }
+
+    // Color filter
+    if (colors) {
+      const colorArray = Array.isArray(colors) ? colors : colors.split(',').map(c => c.trim());
+      if (colorArray.length > 0) {
+        where.colors = { hasSome: colorArray };
+      }
+    }
+
+    // Tags filter
+    if (tags) {
+      const tagArray = Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim());
+      if (tagArray.length > 0) {
+        where.tags = { hasSome: tagArray };
+      }
+    }
+
     // Search functionality
     if (search) {
       where.OR = [
@@ -56,31 +80,6 @@ export const getProducts = async (req, res) => {
           { name: { contains: filterTerm, mode: 'insensitive' } }
         ];
       }
-    }
-
-    // Price range filter
-    if (minPrice || maxPrice) {
-      where.price = {};
-      if (minPrice) where.price.gte = parseFloat(minPrice);
-      if (maxPrice) where.price.lte = parseFloat(maxPrice);
-    }
-
-    // Size filter
-    if (sizes) {
-      const sizeArray = sizes.split(',').map(s => s.trim());
-      where.sizes = { hasSome: sizeArray };
-    }
-
-    // Color filter
-    if (colors) {
-      const colorArray = colors.split(',').map(c => c.trim());
-      where.colors = { hasSome: colorArray };
-    }
-
-    // Tags filter
-    if (tags) {
-      const tagArray = tags.split(',').map(t => t.trim());
-      where.tags = { hasSome: tagArray };
     }
 
     // Featured filter
