@@ -37,29 +37,23 @@ export const getProducts = async (req, res) => {
       ];
     }
 
-    // Collection filter
-    if (collection) {
-      where.collection = {
-        name: { equals: collection, mode: 'insensitive' }
-      };
-    }
-
-    // Category filter
-    if (category) {
+    // Category and Collection filter
+    const filterTerm = category || collection;
+    if (filterTerm) {
       if (where.OR) {
         where.AND = [
           { OR: where.OR },
           { OR: [
-              { collection: { name: { equals: category, mode: 'insensitive' } } },
-              { name: { contains: category, mode: 'insensitive' } }
+              { collection: { name: { equals: filterTerm, mode: 'insensitive' } } },
+              { name: { contains: filterTerm, mode: 'insensitive' } }
             ]
           }
         ];
         delete where.OR;
       } else {
         where.OR = [
-          { collection: { name: { equals: category, mode: 'insensitive' } } },
-          { name: { contains: category, mode: 'insensitive' } }
+          { collection: { name: { equals: filterTerm, mode: 'insensitive' } } },
+          { name: { contains: filterTerm, mode: 'insensitive' } }
         ];
       }
     }
