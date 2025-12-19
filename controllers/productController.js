@@ -107,6 +107,8 @@ export const getProducts = async (req, res) => {
       orderBy.createdAt = 'desc';
     }
 
+    console.log('Prisma where clause:', JSON.stringify(where, null, 2));
+
     // Execute query
     const total = await prisma.product.count({ where });
     const products = await prisma.product.findMany({
