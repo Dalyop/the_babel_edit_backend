@@ -44,11 +44,24 @@ export const getProducts = async (req, res) => {
       };
     }
 
-    // Category filter (using collection for category-based filtering)
+    // Category filter
     if (category) {
-      where.collection = {
-        name: { equals: category, mode: 'insensitive' }
-      };
+      if (where.OR) {
+        where.AND = [
+          { OR: where.OR },
+          { OR: [
+              { collection: { name: { equals: category, mode: 'insensitive' } } },
+              { name: { contains: category, mode: 'insensitive' } }
+            ]
+          }
+        ];
+        delete where.OR;
+      } else {
+        where.OR = [
+          { collection: { name: { equals: category, mode: 'insensitive' } } },
+          { name: { contains: category, mode: 'insensitive' } }
+        ];
+      }
     }
 
     // Price range filter
