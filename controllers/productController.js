@@ -1,5 +1,6 @@
 import prisma from '../prismaClient.js';
 import pluralize from 'pluralize';
+import prisma from '../prismaClient.js';
 
 // Get all products with advanced filtering and search
 export const getProducts = async (req, res) => {
@@ -28,58 +29,109 @@ export const getProducts = async (req, res) => {
       where.isActive = true;
     }
 
-    // Size filter
+    // Size filter - loose matching
     if (sizes) {
       const sizeArray = Array.isArray(sizes) ? sizes : sizes.split(',').map(s => s.trim());
       if (sizeArray.length > 0) {
-        where.sizes = { hasSome: sizeArray };
+        where.OR = where.OR || [];
+        where.OR.push(
+          { sizes: { hasSome: sizeArray } },
+          // Also search in name/description for size
+          ...sizeArray.map(size => ({
+            OR: [
+              { name: { contains: size, mode: 'insensitive' } },
+              { description: { contains: size, mode: 'insensitive' } }
+            ]
+          }))
+        );
       }
     }
 
-    // Color filter
+    // Color filter - loose matching
     if (colors) {
       const colorArray = Array.isArray(colors) ? colors : colors.split(',').map(c => c.trim());
       if (colorArray.length > 0) {
-        where.colors = { hasSome: colorArray };
+        where.OR = where.OR || [];
+        where.OR.push(
+          { colors: { hasSome: colorArray } },
+          // Also search in name/description for color
+          ...colorArray.map(color => ({
+            OR: [
+              { name: { contains: color, mode: 'insensitive' } },
+              { description: { contains: color, mode: 'insensitive' } }
+            ]
+          }))
+        );
       }
     }
 
-    // Tags filter
+    // Tags filter - LOOSE MATCHING (this is the key change!)
     if (tags) {
       const tagArray = Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim());
       if (tagArray.length > 0) {
-        where.tags = { hasSome: tagArray };
+        // Create OR conditions for loose matching
+        const tagConditions = tagArray.flatMap(tag => [
+          { tags: { hasSome: [tag] } }, // Exact tag match
+          { name: { contains: tag, mode: 'insensitive' } }, // Name contains tag
+          { description: { contains: tag, mode: 'insensitive' } }, // Description contains tag
+        ]);
+
+        if (where.OR) {
+          // If OR already exists (from sizes/colors), combine them
+          where.OR.push(...tagConditions);
+        } else {
+          where.OR = tagConditions;
+        }
       }
     }
 
     // Search functionality
     if (search) {
-      where.OR = [
+      const searchConditions = [
         { name: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
         { tags: { hasSome: [search] } }
       ];
+
+      if (where.OR) {
+        // Combine with existing OR conditions using AND
+        where.AND = where.AND || [];
+        where.AND.push({ OR: searchConditions });
+      } else {
+        where.OR = searchConditions;
+      }
     }
 
     // Category and Collection filter
     const filterTerm = category || collection;
     if (filterTerm) {
-      if (where.OR) {
+      const categoryConditions = [
+        { collection: { name: { equals: filterTerm, mode: 'insensitive' } } },
+        { name: { contains: filterTerm, mode: 'insensitive' } }
+      ];
+
+      if (where.OR || where.AND) {
+        // If we already have OR/AND conditions, wrap them
+        const existingConditions = where.OR ? { OR: where.OR } : {};
+        const existingAnd = where.AND || [];
+        
         where.AND = [
-          { OR: where.OR },
-          { OR: [
-              { collection: { name: { equals: filterTerm, mode: 'insensitive' } } },
-              { name: { contains: filterTerm, mode: 'insensitive' } }
-            ]
-          }
-        ];
+          ...existingAnd,
+          existingConditions,
+          { OR: categoryConditions }
+        ].filter(c => Object.keys(c).length > 0);
+        
         delete where.OR;
       } else {
-        where.OR = [
-          { collection: { name: { equals: filterTerm, mode: 'insensitive' } } },
-          { name: { contains: filterTerm, mode: 'insensitive' } }
-        ];
+        where.OR = categoryConditions;
       }
+    }
+
+    // Price range filter
+    if (minPrice || maxPrice) {
+      where.price = {};
+      if (minPrice) where.price.gte = parseFloat(minPrice);
+      if (maxPrice) where.price.lte = parseFloat(maxPrice);
     }
 
     // Featured filter
@@ -107,7 +159,7 @@ export const getProducts = async (req, res) => {
       orderBy.createdAt = 'desc';
     }
 
-    console.log('Prisma where clause:', JSON.stringify(where, null, 2));
+    console.log('🔍 WHERE clause:', JSON.stringify(where, null, 2));
 
     // Execute query
     const total = await prisma.product.count({ where });
@@ -149,7 +201,7 @@ export const getProducts = async (req, res) => {
 
       return {
         ...productData,
-        avgRating: Math.round(avgRating * 10) / 10, // Round to 1 decimal
+        avgRating: Math.round(avgRating * 10) / 10,
         reviewCount: _count.reviews,
         discountPercentage,
         isInStock: product.stock > 0,

@@ -71,7 +71,11 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Session configuration
-const redisClient = new Redis(process.env.REDIS_URL);
+const redisClient = new Redis(process.env.REDIS_URL, {
+  tls: {
+    rejectUnauthorized: false
+  }
+});
 
 app.use(session({
   secret: process.env.JWT_SECRET,
