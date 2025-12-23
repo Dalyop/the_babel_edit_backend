@@ -29,103 +29,60 @@ export const getProducts = async (req, res) => {
       where.isActive = true;
     }
 
-    // Size filter - loose matching
+    // Refined Search and Category/Collection Logic
+    const andConditions = [];
+
+    // --- Search Logic ---
+    // If a search term is provided, it creates a broad 'OR' condition to match against multiple fields.
+    if (search) {
+      const searchTerms = search.split(' ').filter(t => t.length > 0);
+      const searchOrConditions = searchTerms.map(term => ({
+        OR: [
+          { name: { contains: term, mode: 'insensitive' } },
+          { description: { contains: term, mode: 'insensitive' } },
+          { tags: { hasSome: [term] } }
+        ]
+      }));
+      andConditions.push(...searchOrConditions);
+    }
+
+    // --- Category/Collection Logic ---
+    // If a category/collection is specified, it's added as a strict 'AND' condition.
+    const filterTerm = category || collection;
+    if (filterTerm) {
+      andConditions.push({
+        collection: { name: { equals: filterTerm, mode: 'insensitive' } }
+      });
+    }
+
+    // --- Other Filters ---
+    // These are added as additional 'AND' conditions.
     if (sizes) {
       const sizeArray = Array.isArray(sizes) ? sizes : sizes.split(',').map(s => s.trim());
       if (sizeArray.length > 0) {
-        where.OR = where.OR || [];
-        where.OR.push(
-          { sizes: { hasSome: sizeArray } },
-          // Also search in name/description for size
-          ...sizeArray.map(size => ({
-            OR: [
-              { name: { contains: size, mode: 'insensitive' } },
-              { description: { contains: size, mode: 'insensitive' } }
-            ]
-          }))
-        );
+        andConditions.push({ sizes: { hasSome: sizeArray } });
       }
     }
 
-    // Color filter - loose matching
     if (colors) {
       const colorArray = Array.isArray(colors) ? colors : colors.split(',').map(c => c.trim());
       if (colorArray.length > 0) {
-        where.OR = where.OR || [];
-        where.OR.push(
-          { colors: { hasSome: colorArray } },
-          // Also search in name/description for color
-          ...colorArray.map(color => ({
-            OR: [
-              { name: { contains: color, mode: 'insensitive' } },
-              { description: { contains: color, mode: 'insensitive' } }
-            ]
-          }))
-        );
+        andConditions.push({ colors: { hasSome: colorArray } });
       }
     }
 
-    // Tags filter - LOOSE MATCHING (this is the key change!)
     if (tags) {
       const tagArray = Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim());
       if (tagArray.length > 0) {
-        // Create OR conditions for loose matching
-        const tagConditions = tagArray.flatMap(tag => [
-          { tags: { hasSome: [tag] } }, // Exact tag match
-          { name: { contains: tag, mode: 'insensitive' } }, // Name contains tag
-          { description: { contains: tag, mode: 'insensitive' } }, // Description contains tag
-        ]);
-
-        if (where.OR) {
-          // If OR already exists (from sizes/colors), combine them
-          where.OR.push(...tagConditions);
-        } else {
-          where.OR = tagConditions;
-        }
+        andConditions.push({ tags: { hasSome: tagArray } });
       }
     }
 
-    // Search functionality
-    if (search) {
-      const searchConditions = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { tags: { hasSome: [search] } }
-      ];
-
-      if (where.OR) {
-        // Combine with existing OR conditions using AND
-        where.AND = where.AND || [];
-        where.AND.push({ OR: searchConditions });
-      } else {
-        where.OR = searchConditions;
-      }
+    // Combine all AND conditions into the main 'where' clause.
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
-    // Category and Collection filter
-    const filterTerm = category || collection;
-    if (filterTerm) {
-      const categoryConditions = [
-        { collection: { name: { equals: filterTerm, mode: 'insensitive' } } },
-        { name: { contains: filterTerm, mode: 'insensitive' } }
-      ];
-
-      if (where.OR || where.AND) {
-        // If we already have OR/AND conditions, wrap them
-        const existingConditions = where.OR ? { OR: where.OR } : {};
-        const existingAnd = where.AND || [];
-        
-        where.AND = [
-          ...existingAnd,
-          existingConditions,
-          { OR: categoryConditions }
-        ].filter(c => Object.keys(c).length > 0);
-        
-        delete where.OR;
-      } else {
-        where.OR = categoryConditions;
-      }
-    }
 
     // Price range filter
     if (minPrice || maxPrice) {
