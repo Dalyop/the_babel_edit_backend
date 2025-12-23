@@ -1,7 +1,4 @@
 import prisma from '../prismaClient.js';
-import pluralize from 'pluralize';
-
-import prisma from '../prismaClient.js';
 
 // Get all products with advanced filtering and search
 export const getProducts = async (req, res) => {
