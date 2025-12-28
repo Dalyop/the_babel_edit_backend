@@ -26,6 +26,7 @@ import passwordResetRoutes from './routes/passwordResetRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import testimonialRoutes from './routes/testimonialRoutes.js';
+import feedbackRoutes from './routes/feedbackRoutes.js';
 
 // Import passport config
 import './config/passport.js';
@@ -161,6 +162,7 @@ app.use('/api/password', passwordResetRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin/testimonials', testimonialRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // 404 handler
 app.use('/*splat', (req, res) => {

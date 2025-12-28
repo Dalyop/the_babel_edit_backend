@@ -27,6 +27,7 @@ model User {
   orders          Order[]
   reviews         Review[]
   wishlistItems   WishlistItem[]
+  feedbacks       Feedback[]
   // Timestamps
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -212,15 +213,35 @@ model WishlistItem {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
   
-    @@map("testimonials")
-  }
-  
-  enum Role {
-    USER
-    ADMIN
-    SUPER_ADMIN
-  }
-
+      @@map("testimonials")
+    }
+    
+    model Feedback {
+      id          String   @id @default(cuid())
+      userId      String?
+      user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+      type        FeedbackType @default(GENERAL)
+      message     String
+      pageUrl     String?
+        isResolved  Boolean  @default(false)
+        isFeatured  Boolean  @default(false)
+        createdAt   DateTime @default(now())
+        updatedAt   DateTime @updatedAt    
+      @@map("feedbacks")
+    }
+    
+    enum Role {
+      USER
+      ADMIN
+      SUPER_ADMIN
+    }
+    
+    enum FeedbackType {
+      GENERAL
+      BUG
+      SUGGESTION
+      OTHER
+    }
 enum OrderStatus {
   PENDING
   CONFIRMED
