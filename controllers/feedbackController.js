@@ -1,6 +1,6 @@
-const prisma = require('../prismaClient');
+import prisma from '../prismaClient.js';
 
-const createFeedback = async (req, res) => {
+export const createFeedback = async (req, res) => {
   const { type, message, pageUrl } = req.body;
   const userId = req.user?.id;
 
@@ -20,7 +20,7 @@ const createFeedback = async (req, res) => {
   }
 };
 
-const getAllFeedbacks = async (req, res) => {
+export const getAllFeedbacks = async (req, res) => {
   try {
     const feedbacks = await prisma.feedback.findMany({
       include: {
@@ -44,7 +44,7 @@ const getAllFeedbacks = async (req, res) => {
   }
 };
 
-const updateFeedback = async (req, res) => {
+export const updateFeedback = async (req, res) => {
   const { id } = req.params;
   const { isResolved, isFeatured } = req.body;
 
@@ -63,7 +63,7 @@ const updateFeedback = async (req, res) => {
   }
 };
 
-const deleteFeedback = async (req, res) => {
+export const deleteFeedback = async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -77,7 +77,7 @@ const deleteFeedback = async (req, res) => {
   }
 };
 
-const getFeaturedFeedbacks = async (req, res) => {
+export const getFeaturedFeedbacks = async (req, res) => {
   try {
     const feedbacks = await prisma.feedback.findMany({
       where: {
@@ -102,12 +102,4 @@ const getFeaturedFeedbacks = async (req, res) => {
     console.error('Error getting featured feedbacks:', error);
     res.status(500).json({ error: 'Failed to get featured feedbacks' });
   }
-};
-
-module.exports = {
-  createFeedback,
-  getAllFeedbacks,
-  updateFeedback,
-  deleteFeedback,
-  getFeaturedFeedbacks,
 };
