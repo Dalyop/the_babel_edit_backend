@@ -158,13 +158,15 @@ export const createOrder = async (req, res) => {
           createdAt: newOrder.createdAt,
           items: newOrder.items.map(item => ({
             id: item.id,
-            productId: item.productId,
-            name: item.product.name,
-            imageUrl: item.product.imageUrl,
             quantity: item.quantity,
             price: item.price,
             size: item.size,
             color: item.color,
+            product: {
+              id: item.productId,
+              name: item.product.name,
+              imageUrl: item.product.imageUrl,
+            }
           })),
         },
       });
@@ -221,13 +223,15 @@ export const getUserOrders = async (req, res) => {
         createdAt: order.createdAt,
         items: order.items.map(item => ({
           id: item.id,
-          productId: item.productId,
-          name: item.product.name,
-          imageUrl: item.product.imageUrl,
           quantity: item.quantity,
           price: item.price,
           size: item.size,
-          color: item.color
+          color: item.color,
+          product: {
+            id: item.productId,
+            name: item.product.name,
+            imageUrl: item.product.imageUrl,
+          }
         }))
       })),
       pagination: {
@@ -295,14 +299,16 @@ export const getOrder = async (req, res) => {
       shippingAddress: order.shippingAddress,
       items: order.items.map(item => ({
         id: item.id,
-        productId: item.productId,
-        name: item.product.name,
-        description: item.product.description,
-        imageUrl: item.product.imageUrl,
         quantity: item.quantity,
         price: item.price,
         size: item.size,
         color: item.color,
+        product: {
+          id: item.productId,
+          name: item.product.name,
+          description: item.product.description,
+          imageUrl: item.product.imageUrl,
+        },
         subtotal: item.price * item.quantity
       }))
     });
@@ -426,10 +432,13 @@ export const getAllOrders = async (req, res) => {
         itemCount: order.items.length,
         createdAt: order.createdAt,
         items: order.items.map(item => ({
-          name: item.product.name,
-          imageUrl: item.product.imageUrl,
+          id: item.id,
           quantity: item.quantity,
-          price: item.price
+          price: item.price,
+          product: {
+            name: item.product.name,
+            imageUrl: item.product.imageUrl,
+          }
         }))
       })),
       pagination: {

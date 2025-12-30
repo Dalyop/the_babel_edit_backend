@@ -297,6 +297,44 @@ export const updateProfile = async (req, res) => {
   }
 };
 
+// Update user avatar
+export const updateAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file provided.' });
+    }
+
+    const avatarUrl = req.file.path;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.userId },
+      data: {
+        avatar: avatarUrl,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        googleId: true,
+        avatar: true,
+        isVerified: true,
+        createdAt: true,
+        updatedAt: true,
+        role: true
+      },
+    });
+
+    res.json({
+      message: 'Avatar updated successfully',
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error('Update avatar error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // Admin: Get all users
 export const getAllUsers = async (req, res) => {
   try {
