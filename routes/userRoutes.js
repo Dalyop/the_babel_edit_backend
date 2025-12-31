@@ -15,6 +15,7 @@ import {
   getUserStats
 } from '../controllers/userController.js';
 import { authenticateToken, checkRole } from '../middleware/auth.js';
+import { uploadSingle } from '../config/cloudinary.js';
 import { generateAccessToken, generateRefreshToken, setRefreshTokenCookie } from '../utils/authUtils.js';
 
 const router = express.Router();
