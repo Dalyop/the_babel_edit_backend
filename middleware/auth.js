@@ -35,7 +35,8 @@ export const authenticateToken = (req, res, next) => {
 // Check if user is admin
 export const isAdmin = (req, res, next) => {
   try {
-    if (req.user && req.user.role === 'ADMIN') {
+    const userRole = req.user?.role?.toUpperCase();
+    if (userRole && ['ADMIN', 'SUPER_ADMIN'].includes(userRole)) {
       next();
     } else {
       return res.status(403).json({ message: 'Access denied. Admin privileges required.' });

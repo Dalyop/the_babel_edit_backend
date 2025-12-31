@@ -203,6 +203,7 @@ model WishlistItem {
 
   @@unique([userId, productId])
     @@map("wishlist_items")
+    
   }
   
   model Testimonial {
