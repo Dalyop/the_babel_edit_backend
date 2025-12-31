@@ -19,8 +19,7 @@ import {
   hardDeleteProduct,
   getFeaturedProducts
 } from '../controllers/productController.js';
-import { authenticateToken } from '../middleware/auth.js';
-import { checkRole } from '../middleware/roleCheck.js';
+import { authenticateToken, checkRole } from '../middleware/auth.js';
 import { uploadSingle, uploadMultiple, handleUploadError } from '../config/cloudinary.js';
 
 const router = express.Router();
