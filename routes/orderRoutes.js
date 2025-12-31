@@ -9,7 +9,7 @@ import {
   updateOrderStatus,
   confirmOrderPayment
 } from '../controllers/orderController.js';
-import { authenticateToken, isAdmin } from '../middleware/auth.js';
+import { authenticateToken, checkRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -22,7 +22,7 @@ router.patch('/:orderId/cancel', authenticateToken, cancelOrder);
 router.patch('/:orderId/confirm-payment', authenticateToken, confirmOrderPayment);
 
 // Admin routes (require admin role)
-router.get('/admin/all', authenticateToken, isAdmin, getAllOrders);
-router.patch('/admin/:orderId/status', authenticateToken, isAdmin, updateOrderStatus);
+router.get('/admin/all', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), getAllOrders);
+router.patch('/admin/:orderId/status', authenticateToken, checkRole(['ADMIN', 'SUPER_ADMIN']), updateOrderStatus);
 
 export default router;
