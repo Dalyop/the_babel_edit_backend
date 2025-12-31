@@ -90,6 +90,7 @@ export const getFeaturedFeedbacks = async (req, res) => {
             firstName: true,
             lastName: true,
             email: true,
+            avatar: true,
           },
         },
       },
