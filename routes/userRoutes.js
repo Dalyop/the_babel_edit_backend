@@ -14,9 +14,7 @@ import {
   deleteUser,
   getUserStats
 } from '../controllers/userController.js';
-import { authenticateToken } from '../middleware/auth.js';
-import { checkRole } from '../middleware/roleCheck.js';
-import { uploadSingle } from '../config/cloudinary.js';
+import { authenticateToken, checkRole } from '../middleware/auth.js';
 import { generateAccessToken, generateRefreshToken, setRefreshTokenCookie } from '../utils/authUtils.js';
 
 const router = express.Router();

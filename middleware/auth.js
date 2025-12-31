@@ -32,18 +32,21 @@ export const authenticateToken = (req, res, next) => {
   });
 };
 
-// Check if user is admin
-export const isAdmin = (req, res, next) => {
-  try {
-    const userRole = req.user?.role?.toUpperCase();
-    if (userRole && ['ADMIN', 'SUPER_ADMIN'].includes(userRole)) {
-      next();
-    } else {
-      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+// Check for specific roles
+export const checkRole = (allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user || !req.user.role) {
+      return res.status(403).json({ message: 'Access denied. No role information provided.' });
     }
-  } catch (error) {
-    return res.status(403).json({ message: 'Access denied' });
-  }
+
+    const userRole = req.user.role.toUpperCase();
+
+    if (allowedRoles.map(role => role.toUpperCase()).includes(userRole)) {
+      next(); // Role is allowed, so continue
+    } else {
+      res.status(403).json({ message: 'Access denied. You do not have the required permissions.' });
+    }
+  };
 };
 
 
