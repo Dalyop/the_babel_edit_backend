@@ -29,9 +29,12 @@ export const getCart = async (req, res) => {
     }
 
     // Calculate total
-    const total = cart.items.reduce((sum, item) => 
-      sum + (item.product.price * item.quantity), 0
-    );
+    const total = cart.items.reduce((sum, item) => {
+      if (item.product.stock > 0) {
+        return sum + (item.product.price * item.quantity);
+      }
+      return sum;
+    }, 0);
 
     res.json({
       items: cart.items.map(item => ({
@@ -43,6 +46,7 @@ export const getCart = async (req, res) => {
         quantity: item.quantity,
         size: item.size,
         color: item.color,
+        stock: item.product.stock,
         subtotal: item.product.price * item.quantity
       })),
       itemCount: cart.items.reduce((sum, item) => sum + item.quantity, 0),

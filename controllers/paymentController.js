@@ -64,6 +64,13 @@ export const createPaymentIntent = async (req, res) => {
 
     // Create payment intent
     const amountInCents = Math.round(order.total * 100);
+    const MIN_AMOUNT = 50; // For USD, the minimum is $0.50
+
+    if (isNaN(amountInCents) || amountInCents < MIN_AMOUNT) {
+      console.error('❌ Invalid amount for payment intent:', amountInCents);
+      return res.status(400).json({ message: `Invalid calculated amount for payment: $${(amountInCents/100).toFixed(2)}. Must be at least $0.50.` });
+    }
+
     console.log('💳 Creating payment intent for $' + order.total + ' (' + amountInCents + ' cents)');
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -117,7 +124,7 @@ export const createPaymentIntent = async (req, res) => {
 
     res.status(500).json({ 
       message: 'Error creating payment intent',
-      error: error.message
+      error: error
     });
   }
 };
