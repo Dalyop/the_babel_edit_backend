@@ -82,9 +82,7 @@ export const createPaymentIntent = async (req, res) => {
         userId: userId
       },
       description: `Order ${order.orderNumber}`,
-      automatic_payment_methods: {
-        enabled: true,
-      },
+      payment_method_types: ['card'],
     });
 
     console.log('✅ Payment intent created:', paymentIntent.id);
@@ -124,7 +122,10 @@ export const createPaymentIntent = async (req, res) => {
 
     res.status(500).json({ 
       message: 'Error creating payment intent',
-      error: error
+      error: {
+          message: error.message,
+          type: error.type,
+      }
     });
   }
 };
