@@ -160,7 +160,11 @@ export const updateCartItem = async (req, res) => {
 
     // Check stock
     if (quantity > cartItem.product.stock) {
-      return res.status(400).json({ message: 'Insufficient stock' });
+      return res.status(400).json({
+        message: `Insufficient stock. Only ${cartItem.product.stock} available`,
+        available: cartItem.product.stock,
+        requested: quantity
+      });
     }
 
     await prisma.cartItem.update({

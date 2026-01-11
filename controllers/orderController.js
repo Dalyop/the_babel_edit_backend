@@ -47,12 +47,26 @@ export const createOrder = async (req, res) => {
     }
 
     // Check stock availability for all items
+    const stockIssues = [];
     for (const item of cart.items) {
       if (item.product.stock < item.quantity) {
-        return res.status(400).json({ 
-          message: `Insufficient stock for ${item.product.name}` 
+        stockIssues.push({
+          productName: item.product.name,
+          requested: item.quantity,
+          available: item.product.stock
         });
       }
+    }
+
+    if (stockIssues.length > 0) {
+      const errorMessage = stockIssues.map(issue =>
+        `${issue.productName}: requested ${issue.requested}, only ${issue.available} available`
+      ).join('; ');
+
+      return res.status(400).json({
+        message: `Insufficient stock. ${errorMessage}`,
+        stockIssues
+      });
     }
 
     // Calculate totals
@@ -513,22 +527,40 @@ export const createOrderFromCheckout = async (req, res) => {
     }
 
     // Validate all products exist and have sufficient stock
+    const stockIssues = [];
+    const productData = [];
+
     for (const item of items) {
       const product = await prisma.product.findUnique({
         where: { id: item.productId }
       });
 
       if (!product) {
-        return res.status(404).json({ 
-          message: `Product not found: ${item.productId}` 
+        return res.status(404).json({
+          message: `Product not found: ${item.productId}`
         });
       }
 
+      productData.push({ item, product });
+
       if (product.stock < item.quantity) {
-        return res.status(400).json({ 
-          message: `Insufficient stock for ${product.name}` 
+        stockIssues.push({
+          productName: product.name,
+          requested: item.quantity,
+          available: product.stock
         });
       }
+    }
+
+    if (stockIssues.length > 0) {
+      const errorMessage = stockIssues.map(issue =>
+        `${issue.productName}: requested ${issue.requested}, only ${issue.available} available`
+      ).join('; ');
+
+      return res.status(400).json({
+        message: `Insufficient stock. ${errorMessage}`,
+        stockIssues
+      });
     }
 
     // Calculate subtotal from items

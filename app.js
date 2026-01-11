@@ -162,6 +162,7 @@ app.use('/api/password', passwordResetRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin/testimonials', testimonialRoutes);
+app.use('/api/testimonials', testimonialRoutes); // Public testimonials route
 app.use('/api/feedback', feedbackRoutes);
 
 // 404 handler
