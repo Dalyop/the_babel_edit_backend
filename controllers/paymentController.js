@@ -14,7 +14,7 @@ export const createPaymentIntent = async (req, res) => {
     const { orderId } = req.body;
 
     if (!userId) {
-      console.error('❌ No user ID');
+      console.error('❌ No user ID in req.user:', req.user);
       return res.status(401).json({ message: 'User not authenticated' });
     }
 
@@ -24,7 +24,7 @@ export const createPaymentIntent = async (req, res) => {
     }
 
     // Fetch order
-    console.log('🔍 Fetching order:', orderId);
+    console.log('🔍 Fetching order:', orderId, 'for user:', userId);
     const order = await prisma.order.findFirst({
       where: {
         id: orderId,
@@ -40,8 +40,17 @@ export const createPaymentIntent = async (req, res) => {
     });
 
     if (!order) {
-      console.error('❌ Order not found');
-      return res.status(404).json({ message: 'Order not found' });
+      console.error('❌ Order not found for orderId:', orderId, 'userId:', userId);
+      // Try to find if order exists at all
+      const anyOrder = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { id: true, userId: true, orderNumber: true }
+      });
+      console.error('Order lookup result:', anyOrder);
+      return res.status(404).json({
+        message: 'Order not found or does not belong to user',
+        debug: { orderId, userId, foundOrder: anyOrder }
+      });
     }
 
     console.log('✅ Order found:', {
@@ -104,27 +113,31 @@ export const createPaymentIntent = async (req, res) => {
     console.error('=== PAYMENT INTENT ERROR ===');
     console.error('Type:', error.constructor.name);
     console.error('Message:', error.message);
+    console.error('Code:', error.code);
     console.error('Stack:', error.stack);
 
     if (error.type === 'StripeInvalidRequestError') {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Invalid payment request',
-        error: error.message 
+        error: error.message
       });
     }
 
     if (error.type === 'StripeAuthenticationError') {
-      return res.status(500).json({ 
-        message: 'Stripe authentication failed',
-        error: error.message 
+      return res.status(500).json({
+        message: 'Stripe authentication failed. Please check your Stripe API keys.',
+        error: error.message
       });
     }
 
-    res.status(500).json({ 
+    // Return detailed error for debugging
+    res.status(500).json({
       message: 'Error creating payment intent',
       error: {
           message: error.message,
           type: error.type,
+          code: error.code,
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       }
     });
   }

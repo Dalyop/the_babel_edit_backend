@@ -617,12 +617,31 @@ export const createOrderFromCheckout = async (req, res) => {
       return newOrder;
     });
 
+    // Fetch the complete order with items
+    const completeOrder = await prisma.order.findUnique({
+      where: { id: order.id },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                imageUrl: true
+              }
+            }
+          }
+        }
+      }
+    });
+
     res.status(201).json({
-      id: order.id,
-      orderNumber: order.orderNumber,
-      total: order.total,
-      status: order.status,
-      items: order.items
+      id: completeOrder.id,
+      orderNumber: completeOrder.orderNumber,
+      total: completeOrder.total,
+      status: completeOrder.status,
+      userId: completeOrder.userId,
+      items: completeOrder.items
     });
 
   } catch (error) {
