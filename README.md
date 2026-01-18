@@ -198,7 +198,7 @@ The User model includes:
 
 ### Available Scripts
 - `npm run dev`: Start development server with nodemon
-- `npm start`: Start production server
+- `npm run start`: Start production server
 - `npm run db:generate`: Generate Prisma client
 - `npm run db:push`: Push schema changes to database
 - `npm run db:migrate`: Run database migrations
